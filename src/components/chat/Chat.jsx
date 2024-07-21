@@ -1,10 +1,15 @@
 import EmojiPicker from 'emoji-picker-react';
+import { doc, onSnapshot } from 'firebase/firestore';
 import { useEffect, useRef, useState } from 'react';
+import { useChatStore } from '../../lib/chatStore';
+import { db } from '../../lib/firebase';
 import './chat.css';
 export default function Chat() {
+    const [chat, setChat] = useState();
     const [show, setShow] = useState(false);
     const [text, setText] = useState("");
     const endRef = useRef(null);
+    const { chatId } = useChatStore();
     const handleemoji = (e) => {
         setText((prev) => prev + e.emoji);
         setShow(false);
@@ -12,7 +17,13 @@ export default function Chat() {
 
     useEffect(() => {
         endRef.current.scrollIntoView({ behavior:'smooth' });
-    })
+    },[]);
+    useEffect(() => {
+        const unSub = onSnapshot(doc(db,'chats',chatId), (res) => {
+            setChat(res.data());
+        });
+        return () => unSub();
+    },[chatId]);
   return (
     <div className='chat'>
         <div className='top'>
@@ -30,33 +41,15 @@ export default function Chat() {
             </div>
         </div>
         <div className='center'>
-            <div className='message own'>
-                <div className='texts'>
-                    <p>Hello</p>
-                    <span>1 min ago</span>
+            { chat?.messages?.map((message) => (
+                <div className='message own' key={message?.createAt}>
+                    <div className='texts'>
+                        {message.img && <img src = {message.img} />}
+                        <p>{message.text}</p>
+                        {/* <span>{message.createAt}</span> */}
+                    </div>
                 </div>
-            </div>
-            <div className='message'>
-                <img src = "./avatar.png" alt = ""/>
-                <div className='texts'>
-                    <p>Hello</p>
-                    <span>1 min ago</span>
-                </div>
-            </div>
-            <div className='message own'>
-                <div className='texts'>
-                    <img src = "https://cdn.pixabay.com/photo/2017/11/14/00/28/wormwood-some-competition-2947198_640.jpg" />
-                    <p>Hello</p>
-                    <span>1 min ago</span>
-                </div>
-            </div>
-            <div className='message'>
-                <img src = "./avatar.png" alt = ""/>
-                <div className='texts'>
-                    <p>Hello</p>
-                    <span>1 min ago</span>
-                </div>
-            </div>
+            ))}
             <div ref={endRef}></div>
         </div>
         <div className='bottom'>
